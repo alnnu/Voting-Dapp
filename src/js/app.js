@@ -41,7 +41,7 @@ App = {
     web3.eth.getCoinbase((err,account) => {
       if (err === null){
         App.account = account;
-        $("#accontAddress").html(`Your Account ${account}`);
+        $("#accontAddress").html(`Your Account: ${account}`);
       }else {
         console.error(err)
       }
@@ -55,7 +55,10 @@ App = {
       const candidatesResults = $("#candidatesResults")
       candidatesResults.empty()
 
-      for (var  i = 1; i<=candidateCount; i++)
+      const candidatesSelect = $('#candidatesSelect');
+      candidatesSelect.empty();
+
+      for (let  i = 1; i<=candidateCount; i++)
       {
         electionIntance.candidates(i).then((candidate) => {
             const id = candidate[0];
@@ -64,13 +67,31 @@ App = {
             // Render candidate Result
             const candidateTemplate = `<tr><th>${id}</th><td>${name}</td><td>${voteCount}</td></tr>`
             candidatesResults.append(candidateTemplate)
+
+            // Render candidate ballot option
+            const  candidateOption = `<option value="${id}">${name}</ option>`
+            candidatesSelect.append(candidateOption)
           })
       }
-
-      loader.hide();
-      content.show();
+      return electionIntance.voters(App.account)
+    }).then((hasVoted) => {
+      if(hasVoted)
+        $('form').hide()
+      loader.hide()
+      content.show()
     }).catch((error) => {
       console.warn((error))
+    })
+  },
+  castVote: function (){
+    const candidateId = $('#candidatesSelect').val()
+    App.contracts.Election.deployed().then((i) => {
+      return i.vote(candidateId, {from: App.account})
+    }).then((result) => {
+      $("#content").hide()
+      $("#loader").show();
+    }).catch((e) => {
+      console.log(e)
     })
   }
 }
